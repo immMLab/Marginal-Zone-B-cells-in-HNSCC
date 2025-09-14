@@ -1,0 +1,367 @@
+---
+title: "Figure3"
+author: "Jiantong Bao"
+date: "2025-08-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Figure 3A-1
+```{r}
+.libPaths(c('/home/data/t210344/R/x86_64-pc-linux-gnu-library/4.3','/usr/local/lib/R/library','/refdir/Rlib','/home/data/t210344/R/x86_64-pc-linux-gnu-library/4.2'))
+library(ReactomePA)
+library(org.Hs.eg.db)
+library(ggplot2)
+library(Seurat)
+library(pheatmap)
+library(reshape2)
+library(tidyr)
+library(dplyr)
+library(tibble)
+library(RColorBrewer)
+library(ggsci)
+library(ggrepel)
+library(ggplotify)
+library(cowplot)
+library(gridExtra)
+library(viridis)
+library(scales)
+library(ggpubr)
+Bcell <- readRDS("/home/data/t210344/Project/5Dataset/5annotationB/Bcell.annotated.rds")
+Idents(Bcell) <- 'celltype'
+col<-colorRampPalette((pal_npg("nrc")(9)))(13)
+COLORS_NAMES <- levels(Bcell$celltype)
+names(col) <- COLORS_NAMES
+col["MZB-2"] <- "#CCAC2C"
+
+health = subset(Bcell,subset=group==c("HD"))
+primary=subset(Bcell,subset=group==c("HNSCC"))
+Oropharynx = subset(primary,subset=subsite==c("Oropharynx"))
+Non_tonsil = subset(primary,subset=subsite==c("Larynx/Hypopharynx","Nasopharynx","Oral cavity"))
+
+a1 <- UMAPPlot(object = health, group.by = "celltype", pt.size = 0.3, repel=T, label=F, label.size=5, cols = col) + 
+  labs(title = "Healthy Tonsil")+NoLegend();a1
+a2 <- UMAPPlot(object = Oropharynx, group.by = "celltype", pt.size = 0.3, repel=T, label=F, label.size=5, cols = col) + 
+  labs(title = "HNSCC Tonsil")+NoLegend();a2
+a3 <- UMAPPlot(object = Non_tonsil, group.by = "celltype", pt.size = 0.3, repel=T, label=F, label.size=5, cols = col) + 
+  labs(title = "HNSCC Non-tonsil");a3
+a2 <- a2
+a1+a2+a3
+#ggsave("plots/UMAP_celltype_HDtonsilvsHNSCCtonsilvsHNSCCnon-tonsil.pdf", width=width.ppi*2.5 ,height=height.ppi)
+
+sce = subset(Bcell,subset=group==c("HD","HNSCC"))
+cellnum <- table(sce$celltype,sce$orig.ident)
+cellnum_prop <- prop.table(cellnum, margin = 2) 
+cell.prop <- as.data.frame(cellnum_prop)
+colnames(cell.prop) <- c("Celltype","orig.ident","Proportion")
+clinical_metadata <- sce@meta.data[, c("orig.ident","group","subsite")]
+unique_clinical_metadata <- unique(clinical_metadata)
+rownames(unique_clinical_metadata)=NULL
+unique_clinical_metadata <- unique_clinical_metadata %>% distinct(orig.ident, .keep_all = TRUE)
+cellnum_with_clinical <- left_join(cell.prop, unique_clinical_metadata, by = "orig.ident")
+table(cellnum_with_clinical$group)
+table(cellnum_with_clinical$subsite)
+cellnum_with_clinical$groupby[cellnum_with_clinical$group=="HD"] <- 'HD'
+cellnum_with_clinical$groupby[cellnum_with_clinical$subsite %in% c("Larynx/Hypopharynx","Nasopharynx","Oral cavity")] <- 'Non-tonsil'
+cellnum_with_clinical$groupby[cellnum_with_clinical$subsite %in% "Oropharynx"] <- 'Tonsil'
+
+filtered_data <- cellnum_with_clinical %>%
+  mutate(Proportion = Proportion * 100)
+filtered_data <- cellnum_with_clinical %>% 
+  filter(Celltype %in% c("Naive","GCB","PB")) %>%
+           mutate(Proportion = Proportion * 100)
+p <- ggboxplot(filtered_data, x = "groupby", y = "Proportion",select = c("HD", "Non-tonsil","Tonsil"),
+               order = c("HD","Tonsil", "Non-tonsil"),
+               color = "Celltype", palette = col,
+               add = "jitter",
+               facet.by = "Celltype", short.panel.labs = FALSE) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x=element_blank(), legend.position = "right")
+
+my_comparisons <- list( c("Non-tonsil", "Tonsil"),c("Non-tonsil", "HD"),c("Tonsil", "HD")  )
+p + stat_compare_means(comparisons = my_comparisons,label = "p.signif",label.y=c(50,70,90))
+```
+# Figure 3A-2
+```{r}
+sce = subset(Bcell,subset=group==c("HD","HNSCC"))
+cellnum <- table(sce$celltype,sce$orig.ident)
+cellnum_prop <- prop.table(cellnum, margin = 2) 
+cell.prop <- as.data.frame(cellnum_prop)
+colnames(cell.prop) <- c("Celltype","orig.ident","Proportion")
+clinical_metadata <- sce@meta.data[, c("orig.ident","group","subsite")]
+unique_clinical_metadata <- unique(clinical_metadata)
+rownames(unique_clinical_metadata)=NULL
+unique_clinical_metadata <- unique_clinical_metadata %>% distinct(orig.ident, .keep_all = TRUE)
+cellnum_with_clinical <- left_join(cell.prop, unique_clinical_metadata, by = "orig.ident")
+table(cellnum_with_clinical$group)
+table(cellnum_with_clinical$subsite)
+cellnum_with_clinical$groupby[cellnum_with_clinical$group=="HD"] <- 'HD'
+cellnum_with_clinical$groupby[cellnum_with_clinical$subsite %in% c("Larynx/Hypopharynx","Nasopharynx","Oral cavity")] <- 'Non-tonsil'
+cellnum_with_clinical$groupby[cellnum_with_clinical$subsite %in% "Oropharynx"] <- 'Tonsil'
+
+filtered_data <- cellnum_with_clinical %>%
+  mutate(Proportion = Proportion * 100)
+filtered_data <- cellnum_with_clinical %>% 
+  filter(Celltype %in% c("Naive","GCB","PB")) %>%
+           mutate(Proportion = Proportion * 100)
+p <- ggboxplot(filtered_data, x = "groupby", y = "Proportion",select = c("HD", "Non-tonsil","Tonsil"),
+               order = c("HD","Tonsil", "Non-tonsil"),
+               color = "Celltype", palette = col,
+               add = "jitter",
+               facet.by = "Celltype", short.panel.labs = FALSE) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x=element_blank(), legend.position = "right")
+
+my_comparisons <- list( c("Non-tonsil", "Tonsil"),c("Non-tonsil", "HD"),c("Tonsil", "HD")  )
+p + stat_compare_means(comparisons = my_comparisons,label = "p.signif",label.y=c(50,70,90))
+```
+# Figure 3B
+```{r}
+#library(future)
+#plan("multisession", workers = 4)
+#degs = lapply(unique(Bcell$celltype), function(x){
+#  sub_obj = subset(Bcell, subset = celltype == x)
+#  Idents(sub_obj) <- "group"  
+#  FindMarkers(sub_obj, ident.1 = "HNSCC", ident.2 = "HD", min.cells.group = 2)
+#})
+#saveRDS(degs, file = "7-HD-HNSC/degs_list.rds")
+library(tidyverse)
+degs <- readRDS("/home/data/t210344/Project/5Dataset/7-HD-HNSC/deg.rds")
+names(degs) <- unique(Bcell$celltype)
+df2 <- data.frame()
+top_n_df <- data.frame()
+top10sig0_df <- data.frame()
+for (i in 1:length(degs)){
+  dat <- degs[[i]]
+  dat$cell_type <- names(degs)[[i]]
+  dat$gene <- rownames(dat)
+  dat$change <- ifelse(dat$avg_log2FC>0 & dat$p_val_adj<0.05,'up',
+                       ifelse(dat$avg_log2FC<0 & dat$p_val_adj<0.05,'down','nochange'))
+  dat$label <- ifelse(dat$p_val_adj<0.01,"adjust P-val<0.01","adjust P-val>=0.01")
+  dat_sig <- dat[dat$change!='nochange',]
+  up_top2 <- top_n(dat_sig[dat_sig$change=='up',],3,avg_log2FC)[,'gene']
+  down_top2 <- top_n(dat_sig[dat_sig$change=='down',],-3,avg_log2FC)[,'gene']
+  top10sig0 <- filter(dat_sig) %>% distinct(gene,.keep_all = T) %>% top_n(5,abs(avg_log2FC))
+  label_gene <- c(up_top2,down_top2)
+  top_n_df <- rbind(top_n_df,dat[label_gene,]) 
+  df2 <- rbind(df2,dat)
+  top10sig0_df <- rbind(top10sig0_df,top10sig0) 
+}
+
+rownames(df2) <- 1:nrow(df2)
+rownames(top10sig0_df) <- 1:nrow(top10sig0_df)
+
+df3 <- df2
+df2 <- df2[df2$change!='nochange',]
+
+df2$size <- case_when(!(df2$gene %in% top10sig0_df$gene)~ 1,
+                      df2$gene %in% top10sig0_df$gene ~ 2)
+
+dt <- filter(df2,size==1)
+head(dt)
+
+p1 <- ggplot()+
+  geom_jitter(data = dt,
+              aes(x = factor(cell_type, levels = levels(Bcell$celltype)), y = avg_log2FC, color = label),
+              size = 0.85,
+              width =0.4)
+p1
+
+p2 <- p1+
+  geom_jitter(data = top10sig0_df,
+              aes(x = cell_type, y = avg_log2FC, color = label),
+              size = 1,
+              width =0.4)
+p2
+
+up_bar <- top_n(group_by(df2,cell_type),1,avg_log2FC)
+down_bar <- top_n(group_by(df2,cell_type),-1,avg_log2FC)
+bar_df <- data.frame(row.names=up_bar$cell_type,x=up_bar$cell_type,
+                     up=up_bar$avg_log2FC+0.3,
+                     down=down_bar$avg_log2FC-0.3)
+bar_df <- bar_df[sort(unique(df2$cell_type)),]
+
+bar_df$down <- ifelse(bar_df$down>=0,NA,bar_df$down)
+
+ggplot()+geom_col(data = bar_df,aes(x=x,y=up),alpha = 0.2)+
+  geom_col(data = bar_df,aes(x=x,y=down),alpha = 0.2)
+
+
+p3 <- p2+geom_col(data = bar_df,aes(x=x,y=up),alpha = 0.2)+
+  geom_col(data = bar_df,aes(x=x,y=down),alpha = 0.2)
+p3
+
+box_df <- data.frame(x=(levels(Bcell$celltype)),y=0)
+p4 <- p3+geom_tile(data = box_df,aes(x=x,y=y),height=0.6,fill=col,color = "black")
+p4
+
+p5 <- p4+
+  geom_text_repel(
+    data=top10sig0_df,
+    aes(x=cell_type,y=avg_log2FC,label=gene),
+    force = 1.2,
+    arrow = arrow(length = unit(0.008, "npc"),
+                  type = "open", ends = "last")
+  )
+p5
+
+p6 <- p5 +
+  scale_color_manual(name=NULL,
+                     values = c("red","black"))
+p6
+
+p7 <- p6+
+  labs(x="CellType",y="average log2FC")+
+  geom_text(data=dt,
+            aes(x=cell_type,y=0,label=cell_type),
+            cols = col,
+            size =4,
+            color ="black")
+p7
+
+p8 <- p7+
+  theme_minimal()+
+  theme(
+    axis.title = element_text(size = 13,
+                              color = "black",
+                              face = "bold"),
+    axis.line.y = element_line(color = "black",
+                               size = 1.2),
+    axis.line.x = element_blank(),
+    axis.text.x = element_blank(),
+    panel.grid = element_blank(),
+    legend.position = "top",
+    legend.direction = "vertical",
+    legend.justification = c(1,0),
+    legend.text = element_text(size = 15)
+  )
+p8
+#ggsave("plots/HD_HNSC_multiple_comparison.pdf",p8, width=16 ,height=6)
+```
+# Figure 3C 
+```{r}
+df <- readr::read_csv(
+  "/home/data/t210344/Project/5Dataset/7-HD-HNSC/HDv.s.HNSCC_GSEA/Bcells_GO_BP_cluster_simplified.csv",
+  show_col_types = FALSE
+)
+
+if ("...1" %in% names(df)) df <- dplyr::select(df, -`...1`)
+
+df$GeneRatio_num <- vapply(strsplit(as.character(df$GeneRatio), "/"),
+                           function(z) if (length(z) == 2)
+                             suppressWarnings(as.numeric(z[1]) / as.numeric(z[2]))
+                           else NA_real_, numeric(1))
+
+df_top <- df |>
+  dplyr::filter(!is.na(.data$p.adjust)) |>
+  dplyr::group_by(.data$Cluster) |>
+  dplyr::slice_min(order_by = .data$p.adjust, n = 5, with_ties = FALSE) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(
+    Description_wrapped = stringr::str_wrap(.data$Description, width = 50),
+    
+    Description_ord = forcats::fct_reorder(Description_wrapped, .data$p.adjust, .desc = TRUE)
+  )
+
+p <- ggplot2::ggplot(
+  df_top,
+  ggplot2::aes(x = -log10(.data$p.adjust),
+               y = .data$Description_ord,
+               color = .data$Cluster,
+               size = .data$GeneRatio_num)
+) +
+  ggplot2::geom_point() +
+  ggplot2::labs(x = expression(-log[10]("adj p")),
+                y = NULL,
+                size = "GeneRatio",
+                title = "GO BP (simplified)") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(axis.text.y = ggplot2::element_text(size = 9),
+                 plot.title = ggplot2::element_text(hjust = 0.5))
+print(p)
+
+```
+# Figure 3D 
+```{r}
+suppressPackageStartupMessages({
+  library(msigdbr)
+  library(GSEABase)
+  library(GSVA)
+  library(pheatmap)
+  library(dplyr)
+})
+
+av <- read.csv("/home/data/t210344/Project/5Dataset/7-HD-HNSC/AverageExpression-0.8.csv", 
+               row.names = 1, check.names = FALSE)
+av <- as.matrix(av) 
+mode(av) <- "numeric"
+gset <- msigdbr(species = "Homo sapiens", 
+                category = "C2", 
+                subcategory = "REACTOME") %>%
+  dplyr::select(gs_name, gene_symbol)
+
+gset_set <- split(x = gset$gene_symbol, f = gset$gs_name)
+
+gene_sets <- lapply(names(gset_set), function(nm) {
+  GeneSet(
+    geneIds = unique(gset_set[[nm]]),
+    setName = nm,
+    geneIdType = SymbolIdentifier(),
+    organism = "Homo sapiens"
+  )
+})
+gsc <- GeneSetCollection(gene_sets)
+
+params <- gsvaParam(exprData = av,
+                    geneSets = gsc,
+                    kcdf = "Gaussian")
+
+es.max <- gsva(params)
+
+df = do.call(rbind,
+             lapply(1:ncol(es.max), function(i){
+               data.frame(
+                 path  = rownames(es.max),
+                 cluster = colnames(es.max)[i],
+                 sd.1 = es.max[,i], 
+                 sd.2 = apply(es.max[,-i], 1, median)
+               )
+             })) 
+
+df$fc = df$sd.1 - df$sd.2
+top <- df %>% group_by(cluster) %>% top_n(5, fc)
+
+n = es.max[top$path, ]
+n <- n[!duplicated(rownames(n)), ]
+rownames(n) <- gsub('REACTOME_', '', rownames(n))
+
+pheatmap(n, show_colnames = TRUE, 
+         scale = "row", angle_col = 45,
+         cluster_row = TRUE, cluster_col = TRUE,
+         color = colorRampPalette(c("navy", "white", "firebrick3"))(50))
+
+c <- c("REACTOME_CLASS_I_MHC_MEDIATED_ANTIGEN_PROCESSING_PRESENTATION",
+       "REACTOME_ANTIGEN_ACTIVATES_B_CELL_RECEPTOR_BCR_LEADING_TO_GENERATION_OF_SECOND_MESSENGERS",
+       "REACTOME_SIGNALING_BY_THE_B_CELL_RECEPTOR_BCR",
+       "REACTOME_MHC_CLASS_II_ANTIGEN_PRESENTATION",
+       "REACTOME_ANTIGEN_PROCESSING_CROSS_PRESENTATION",
+       "REACTOME_SIGNALING_BY_MET",
+       "REACTOME_SIGNALING_BY_NOTCH1",
+       "REACTOME_INTERFERON_SIGNALING",
+       "REACTOME_SIGNALING_BY_TGFB_FAMILY_MEMBERS",
+       "REACTOME_SIGNALING_BY_TGF_BETA_RECEPTOR_COMPLEX",
+       "REACTOME_AUTOPHAGY",
+       "REACTOME_REGULATED_NECROSIS",
+       "REACTOME_ANTIVIRAL_MECHANISM_BY_IFN_STIMULATED_GENES",
+       "REACTOME_CELL_CELL_COMMUNICATION",
+       "REACTOME_EPH_EPHRIN_SIGNALING",
+       "REACTOME_CELL_SURFACE_INTERACTIONS_AT_THE_VASCULAR_WALL",
+       "REACTOME_IMMUNOREGULATORY_INTERACTIONS_BETWEEN_A_LYMPHOID_AND_A_NON_LYMPHOID_CELL")
+
+c <- c[c %in% rownames(es.max)] 
+
+pheatmap(es.max[c,], show_colnames = TRUE, 
+         scale = "row", angle_col = 45,
+         cluster_row = TRUE, cluster_col = FALSE,
+         color = colorRampPalette(c("navy", "white", "firebrick3"))(50))
+```

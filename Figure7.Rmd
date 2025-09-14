@@ -1,0 +1,53 @@
+---
+title: "202508Figure7"
+author: "Jiantong Bao"
+date: "2025-08-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Figure 5A
+```{r}
+.libPaths(c('/home/data/t210344/R/x86_64-pc-linux-gnu-library/4.3','/usr/local/lib/R/library','/refdir/Rlib','/home/data/t210344/R/x86_64-pc-linux-gnu-library/4.2'))
+Bcell <- readRDS("/home/data/t210344/Project/5Dataset/5annotationB/Bcell.annotated.rds")
+suppressPackageStartupMessages({
+  library(Seurat)
+  library(ggplot2)
+  library(dplyr)
+})
+
+
+genes <- c("NR4A1","NR4A2","NR4A3","CD83","ENTPD1","NT5E")
+
+
+DefaultAssay(Bcell) <- "RNA"
+expr <- FetchData(Bcell, vars = c(genes, "celltype"))
+
+
+df <- expr %>%
+  tidyr::pivot_longer(cols = all_of(genes), names_to = "gene", values_to = "expression")
+
+order_ct <- c("MZB-1","MZB-2","GCB","PB","Plasmablast","DN","Naive","TS",
+              "AcB1","AcB2","AcB3","IgM-only","Memory")
+df$celltype <- factor(df$celltype, levels = order_ct)
+df$gene     <- factor(df$gene, levels = genes)
+
+p <- ggplot(df, aes(x = celltype, y = expression, fill = celltype)) +
+  geom_violin(scale = "width", trim = TRUE, color = "black") +
+  facet_grid(rows = vars(gene), scales = "free_y", switch = "y") +
+  theme_bw() +
+  theme(
+    strip.text.y = element_text(angle = 0, hjust = 1, size = 10),
+    axis.text.x  = element_text(angle = 45, hjust = 1, size = 8),
+    axis.title.x = element_text(size = 10),
+    axis.title.y = element_blank(),
+    legend.position = "none"
+  ) +
+  ylab("Expression Level") +
+  xlab("")
+
+print(p)
+```

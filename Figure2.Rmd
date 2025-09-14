@@ -1,0 +1,385 @@
+---
+title: "Figure2"
+author: "Jiantong Bao"
+date: "2025-08-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+.libPaths(c('/home/data/t210344/R/x86_64-pc-linux-gnu-library/4.3','/usr/local/lib/R/library','/refdir/Rlib','/home/data/t210344/R/x86_64-pc-linux-gnu-library/4.2'))
+library(ReactomePA)
+library(org.Hs.eg.db)
+library(ggplot2)
+library(Seurat)
+library(pheatmap)
+library(reshape2)
+library(tidyr)
+library(dplyr)
+library(tibble)
+library(RColorBrewer)
+library(ggsci)
+library(ggrepel)
+library(ggplotify)
+library(cowplot)
+library(gridExtra)
+library(viridis)
+library(scales)
+
+
+```
+# all umap
+```{r}
+set.seed(123)  
+
+sce <-readRDS("/home/data/t210344/Project/5Dataset/8cellcommunication/sce.fine.annotated.rds")
+a1 <- UMAPPlot(object = sce, group.by = "main_labels", pt.size = 0.3, repel=T, label=T, label.size=3) + 
+  labs(title = "HNSCC");a1
+#ggsave("plots/Fig2B_sce_main_labels.pdf", a1, width=width.ppi ,height=height.ppi)
+```
+# Bcell umap
+```{r}
+Bcell <- readRDS("/home/data/t210344/Project/5Dataset/5annotationB/Bcell.annotated.rds")
+Idents(Bcell) <- 'celltype'
+col<-colorRampPalette((pal_npg("nrc")(9)))(13)#
+show_col(col)
+COLORS_NAMES <- levels(Bcell$celltype)
+names(col) <- COLORS_NAMES
+col["MZB-2"] <- "#CCAC2C"
+
+a2 <- UMAPPlot(object = Bcell, group.by = "celltype", pt.size = 0.3, repel=T, label=T, label.size=3, cols = col) + 
+  labs(title = "B cell");a2
+#ggsave('plots/Fig2B_B_cell_umap.pdf',a2,width = width.ppi, height = height.ppi)
+```
+# B cell features
+```{r}
+rna_features_output_split_dot <- c("IGHD", "IGHM", "CD27", "CD1C", "PLD4", "CD5","CR2","FCER2", "CCR7", "MME", "MZB1", "IGLL5", "CD24", "CD38", "COCH", "CXCR5", "ZEB2", "MX1", "BCL6", "BCL7A", "PCNA","MZB.RNA1", "GC.RNA1", "IgG.RNA1", "IgA.RNA1")
+
+plot_alldot <- DotPlot(Bcell, features = rna_features_output_split_dot, scale.by = "radius", dot.min = 0, dot.scale = 15, assay = "RNA") +
+  RotatedAxis() +
+  scale_color_viridis_c() +
+  theme(axis.title.x=element_blank(), axis.title.y=element_blank()) +
+  guides(size = guide_legend(title = "Percent\nExpressed"), color = guide_colourbar(title = "Average\nExpression"));plot_alldot
+#ggsave(filename = "plots/Fig2C_Bcell_dotplot.pdf", plot = plot_alldot, width = width.ppi*2, height = height.ppi)
+```
+# B cell proportion
+```{r}
+table(Bcell$group)
+Primary=subset(Bcell,subset=group==c("HD","HNSCC"))
+cellnum <- table(Primary$celltype,Primary$group)
+cell.prop <- as.data.frame(prop.table(cellnum))
+colnames(cell.prop) <- c("Celltype","Group","Proportion")
+
+p.bar <- ggplot(cell.prop,aes(Group,Proportion,fill=Celltype))+
+  geom_bar(stat="identity",position="fill")+
+  scale_fill_manual(values=col)+ #
+  ggtitle("Cell Proportion")+
+  theme_bw()+
+  theme(axis.ticks.length=unit(0.5,'cm'))+
+  guides(fill=guide_legend(title=NULL))
+p.bar # + NoLegend()
+#ggsave("6-StratifiedAnalysis/Primary_Stratified_group.pdf", width = width.ppi,height = height.ppi)
+
+```
+# PBMC vs TIL
+```{r}
+col["Memory"] <- "grey"
+table(Bcell$sample_type)
+Idents(Bcell) <- 'sample_type'
+Bcell <- RenameIdents(Bcell,
+                    `LN TIL` = 'TIL',`Local recurrence` = 'TIL',
+                    `Metastasis` = 'TIL')
+Bcell$PBL_and_TIL <- Idents(Bcell)
+Idents(Bcell) <- 'PBL_and_TIL'
+
+cellnum <- table(Bcell$celltype,Bcell$PBL_and_TIL)
+cell.prop <- as.data.frame(prop.table(cellnum))
+colnames(cell.prop) <- c("Celltype","PBL_and_TIL","Proportion")
+
+p1 <- ggplot(cell.prop,aes(PBL_and_TIL,Proportion,fill=Celltype))+
+  geom_bar(stat="identity",position="fill")+
+  scale_fill_manual(values=col)+ #
+  theme_bw()+
+  theme(axis.ticks.length=unit(0.5,'cm'))+
+  guides(fill=guide_legend(title=NULL))+
+  scale_x_discrete("Origin",limits = c("PBL","TIL"))+
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+p1
+```
+# Tissue origin
+```{r}
+Tissue=subset(Bcell,subset=PBL_and_TIL!=c("PBL"))
+table(Tissue$sample_type)
+table(Tissue$group)
+cellnum <- table(Tissue$celltype,Tissue$group)
+cell.prop <- as.data.frame(prop.table(cellnum))
+colnames(cell.prop) <- c("Celltype","group","Proportion")
+
+p2 <- ggplot(cell.prop,aes(group,Proportion,fill=Celltype))+
+  geom_bar(stat="identity",position="fill")+
+  scale_fill_manual(values=col)+ #
+  theme_bw()+
+  theme(axis.ticks.length=unit(0.5,'cm'))+
+  guides(fill=guide_legend(title=NULL))+
+  scale_x_discrete("Progression",limits = c("HD","Leukoplakia","HNSCC","Normal","Local recurrence","LN metastasis","Metastasis"),
+                   labels = c("HD" = "HD Tonsil","HNSCC" = "Primary","Normal"="Peritumor", "Local recurrence" = "Local r.","LN metastasis" = "LN m.","Metastasis" = "Distant m."))+
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+p2
+```
+# HPV
+```{r}
+table(Tissue$HPV)
+Idents(Tissue) <- 'HPV'
+Tissue <- RenameIdents(Tissue,
+                    `P16+` = 'p16+',`P16-` = 'p16-')
+Tissue$HPV <- Idents(Tissue)
+Idents(Tissue) <- 'celltype'
+
+cellnum <- table(Tissue$celltype,Tissue$HPV)
+cell.prop <- as.data.frame(prop.table(cellnum))
+colnames(cell.prop) <- c("Celltype","HPV","Proportion")
+p3 <- ggplot(cell.prop,aes(HPV,Proportion,fill=Celltype))+
+  geom_bar(stat="identity",position="fill")+
+  scale_fill_manual(values=col)+ #
+  theme_bw()+
+  theme(axis.ticks.length=unit(0.5,'cm'))+
+  guides(fill=guide_legend(title=NULL))+
+  scale_x_discrete(limits = c("p16-", "p16+"))+
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+p3 + NoLegend()
+```
+# T stage
+```{r}
+cellnum <- table(Tissue$celltype,Tissue$T_stage)
+cell.prop <- as.data.frame(prop.table(cellnum))
+colnames(cell.prop) <- c("Celltype","T_Stage","Proportion")
+p4 <- ggplot(cell.prop,aes(T_Stage,Proportion,fill=Celltype))+
+  geom_bar(stat="identity",position="fill")+
+  scale_fill_manual(values=col)+ #
+  theme_bw()+
+  theme(axis.ticks.length=unit(0.5,'cm'))+
+  guides(fill=guide_legend(title=NULL))+
+  scale_x_discrete("T stage",limits = c("T1", "T2", "T3", "T4")) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+p4 + NoLegend()
+```
+# Location
+```{r}
+table(Tissue$subsite)
+cellnum <- table(Tissue$celltype,Tissue$subsite)
+cell.prop <- as.data.frame(prop.table(cellnum))
+colnames(cell.prop) <- c("Celltype","subsite","Proportion")
+p5 <- ggplot(cell.prop,aes(subsite,Proportion,fill=Celltype))+
+  geom_bar(stat="identity",position="fill")+
+  scale_fill_manual(values=col)+ #
+  theme_bw()+
+  theme(axis.ticks.length=unit(0.5,'cm'))+
+  guides(fill=guide_legend(title=NULL))+
+  scale_x_discrete("Location",limits = c("Larynx/Hypopharynx","Oropharynx","Nasopharynx","Oral cavity")) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+p5
+
+```
+# Figure 2D
+```{r}
+library(readr)
+library(dplyr) 
+library(ggpubr)
+cellnum_with_clinical <- read_csv("/home/data/t210344/Project/5Dataset/6StratifiedAnalysis/cellnum_with_clinical.csv")
+cellnum_with_clinical$HPV <- gsub("P", "p", cellnum_with_clinical$HPV) 
+filtered_data <- cellnum_with_clinical %>%
+  filter(Celltype %in% c("MZB-1","MZB-2","GCB"),sample_type == "TIL") %>%
+  select(orig.ident,HPV, Proportion,Celltype,sample_type,T_stage)%>%
+  mutate(Proportion = Proportion * 100)
+my_comparisons <- list( c("p16-", "p16+") )
+bxp <- ggboxplot(filtered_data, x = "HPV", y = "Proportion",select = c("p16-","p16+"),
+                 color = "Celltype", fill = "Celltype", palette = c("MZB-1" = "#E64B35","MZB-2" = "#CCAC2C","GCB" = "#33B2BB"), 
+                 add = "jitter", add.params = list(size = 1.5, alpha = 1), outlier.shape = NA) + 
+  scale_fill_manual(values = alpha( c("MZB-1" = "#E64B35","MZB-2" = "#CCAC2C","GCB" = "#33B2BB"), .5)) +
+  labs(x = "Subset Names", y = "% of CD19", color = "Celltype", shape = "Celltype") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x=element_blank(), legend.position = "right") +
+  stat_compare_means(comparisons = my_comparisons,label = "p.format");bxp
+#ggsave("plots/TIL_hpv_boxplot.pdf", width = width.ppi*0.5,height = height.ppi*0.7)
+```
+# 
+```{r}
+filtered_data <- cellnum_with_clinical %>%
+  dplyr::filter(Celltype %in% c("MZB-1","MZB-2","GCB"),
+                !sample_type %in% c("PBL","Normal","Tonsil","Leukoplakia")) %>%
+  dplyr::select(orig.ident, HPV, Proportion, Celltype, sample_type, T_stage) %>%
+  dplyr::mutate(Proportion = Proportion * 100)
+filtered_data <- filtered_data %>%
+  mutate(T.stage = case_when(
+    T_stage %in% c("T1", "T2") ~ "T1,T2",
+    T_stage %in% c("T3", "T4") ~ "T3,T4",
+    TRUE ~ NA_character_  # 
+  ))
+my_comparisons <- list( c("T1,T2", "T3,T4") )
+ggboxplot(filtered_data, x = "T.stage", y = "Proportion", select=c("T1,T2","T3,T4"),
+          color = "Celltype",fill = "Celltype",palette = c("MZB-1" = "#E64B35","MZB-2" = "#CCAC2C","GCB" = "#33B2BB"),
+          add = "jitter", add.params = list(size = 1.5, alpha = 1),
+          outlier.shape = NA) + labs(x = "Subset Names", y = "% of CD19", color = "Celltype", shape = "Celltype") + 
+  scale_fill_manual(values = alpha( c("MZB-1" = "#E64B35","MZB-2" = "#CCAC2C","GCB" = "#33B2BB"), .5)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x=element_blank())+
+  stat_compare_means(comparison = my_comparisons,label = "p.format") + NoLegend()
+#ggsave("plots/TIL_T_stage_boxplot2.pdf", width = width.ppi*0.5,height = height.ppi*0.7)
+```
+# 
+```{r}
+cellnum_with_clinical$N_stage <- gsub("N2a|N2b|N2c", "N2", cellnum_with_clinical$N_stage)
+filtered_data <- cellnum_with_clinical %>%
+  dplyr::filter(Celltype %in% c("MZB-1","MZB-2","GCB"),
+                !sample_type %in% c("PBL","Normal","Tonsil","Leukoplakia")) %>%
+  dplyr::select(orig.ident, Proportion, Celltype, sample_type, N_stage) %>%
+  dplyr::mutate(Proportion = Proportion * 100)
+filtered_data2 <- filtered_data %>%
+  dplyr::mutate(
+    N_group = dplyr::case_when(
+      N_stage %in% c("N0","N1") ~ "N0,N1",
+      N_stage %in% c("N2","N3") ~ "N2,N3",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  dplyr::filter(!is.na(N_group)) %>%
+  dplyr::mutate(
+    N_group = factor(N_group, levels = c("N0,N1","N2,N3"))
+  )
+
+my_comparisons <- list(c("N0,N1", "N2,N3"))
+
+p <- ggboxplot(
+  filtered_data2,
+  x = "N_group", y = "Proportion",
+  color = "Celltype", fill = "Celltype",
+  palette = c("MZB-1" = "#E64B35","MZB-2" = "#CCAC2C","GCB" = "#33B2BB"),
+  add = "jitter", add.params = list(size = 1.5, alpha = 1),
+  outlier.shape = NA,
+  order = c("N0,N1","N2,N3")
+) +
+  labs(x = "Subset Names", y = "% of CD19", color = "Celltype", shape = "Celltype") +
+  scale_fill_manual(values = alpha(c("MZB-1"="#E64B35","MZB-2"="#CCAC2C","GCB"="#33B2BB"), 0.5)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  stat_compare_means(comparisons = my_comparisons, label = "p.format")
+p
+#ggsave("p/TIL_T_stage_boxplot3.pdf", width = width.ppi*0.5,height = height.ppi*0.7)
+```
+# 
+```{r}
+filtered_data <- cellnum_with_clinical %>%
+  dplyr::filter(Celltype %in% c("MZB-1","MZB-2","GCB"),
+                !sample_type %in% c("PBL","Normal","Tonsil","Leukoplakia")) %>%
+  dplyr::select(orig.ident, subsite, Proportion, Celltype, sample_type, T_stage) %>%
+  dplyr::mutate(Proportion = Proportion * 100)
+my_comparisons <- list( c("Larynx/Hypopharynx", "Oropharynx"), c("Nasopharynx", "Oropharynx"), c("Oral cavity", "Oropharynx") )
+bxp <- ggboxplot(filtered_data, x = "subsite", y = "Proportion", 
+                 select=c("Larynx/Hypopharynx","Nasopharynx","Oral cavity","Oropharynx"),order=c("Larynx/Hypopharynx","Oropharynx","Nasopharynx","Oral cavity"),
+                 color = "Celltype",fill = "Celltype",palette = c("MZB-1" = "#E64B35","MZB-2" = "#CCAC2C","GCB" = "#33B2BB"),
+                 add = "jitter", add.params = list(size = 1.5, alpha = 1),
+                 outlier.shape = NA) + labs(x = "Subset Names", y = "% of CD19", color = "Celltype", shape = "Celltype") + 
+  scale_fill_manual(values = alpha( c("MZB-1" = "#E64B35","MZB-2" = "#CCAC2C","GCB" = "#33B2BB"), .5)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), 
+        axis.title.x=element_blank())+stat_compare_means(comparisons = my_comparisons,label = "p.format") + NoLegend();bxp
+#ggsave("bxp/TIL_T_stage_boxplot4.pdf", width = width.ppi*0.5,height = height.ppi*0.7)
+```
+# Figure 2E
+```{r}
+col = c(
+  "GSE139324" = "#593202",
+  "GSE164690" = "#ECE4B7",
+  "GSE181919" = "#0072B5FF",
+  "GSE234933" = "#20854EFF")
+
+
+all_meta = Bcell@meta.data
+meta = all_meta %>%
+  filter( sample_type %in% "TIL")
+
+if(TRUE) {
+  df.sample_count <- meta %>%
+    group_by(orig.ident,patient.id, HPV, subsite) %>%
+    summarise(B_n = n(), .groups = 'drop')
+  
+  for (i in sort(unique(meta$celltype))) {
+    tmp = meta %>%
+      filter(celltype == i) %>%
+      group_by(orig.ident) %>%
+      summarise(n = n())
+    
+    tmp[is.na(tmp)] = 0
+    
+    df.sample_count = left_join(df.sample_count, tmp, by = "orig.ident")
+    df.sample_count[is.na(df.sample_count)] = 0
+    
+    df.sample_count$percent =
+      round(df.sample_count$n / df.sample_count$B_n * 100, 2)
+    
+    i_names = paste0(i, "_n")
+    colnames(df.sample_count)[length(df.sample_count) - 1] = i_names
+    
+    i_names = paste0(i, "_percent")
+    colnames(df.sample_count)[length(df.sample_count)] = i_names
+  }
+  
+}
+
+all_meta = sce@meta.data
+CD45_meta = all_meta %>%
+  filter( sample_type %in% "TIL")
+  
+df.sample_count_CD45 = CD45_meta %>% 
+  group_by(orig.ident) %>% 
+  summarise(CD45_n=n())
+
+plot_df = df.sample_count %>%
+  left_join(df.sample_count_CD45, by = "orig.ident") %>%
+  filter(is.na(CD45_n) == FALSE)
+
+
+
+plot_df$Naive_percent = plot_df$Naive_n / plot_df$CD45_n * 100
+plot_df$Memory_percent = plot_df$Memory_n / plot_df$CD45_n * 100
+plot_df$PB_percent = plot_df$PB_n / plot_df$CD45_n * 100
+plot_df$GCB_sample = ifelse(plot_df$GCB_percent > 0, "GCB", "no-GCB")
+
+i = "Naive_percent"
+for (i in c("Naive_percent","Memory_percent","PB_percent")) {
+  tmp = plot_df[, c("GCB_sample", i)]
+  colnames(tmp)[ncol(tmp)] = "abundance"
+  
+  p <- ggplot(tmp,
+              aes(x = GCB_sample,
+                  y = abundance,
+                  color = GCB_sample)) +
+    geom_boxplot(outlier.color = NA, lwd = 0.3) +
+    geom_jitter(size = 0.6, shape = 16, stroke = 0, width = 0.2) +
+    ggsignif::geom_signif(
+      color = "black",
+      comparisons = list(c("GCB", "no-GCB")),
+      test = wilcox.test,
+      step_increase = -0.1,
+      textsize = 7 * 0.35,
+      size = 0.2
+    ) +
+    scale_color_manual(values = c("GCB" = "#efbf05", "no-GCB" = "#0173c1")) +
+    xlab("") + ylab("Percentage") +
+    cowplot::theme_cowplot() +
+    theme(
+      axis.text.x = element_blank(),
+      axis.text.y = element_text(size = 7),
+      plot.title = element_text(size = 8, hjust = 0.5, face = 'plain'),
+      title = element_text(size = 8),
+      plot.margin = unit(c(0, 0, 0, 0), "char"),
+      axis.line = element_line(size = 0.3),
+      axis.ticks = element_line(size = 0.3),
+      strip.background = element_rect(color = NA, fill = NA),
+      strip.text = element_text(size = 8),
+      legend.position = "none"
+    )
+  
+  print(p)   
+}
+```

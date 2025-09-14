@@ -1,0 +1,206 @@
+
+library(ggplot2)
+library(Seurat)
+library(pheatmap)
+library(reshape2)
+library(tidyr)
+library(dplyr)
+library(tibble)
+library(RColorBrewer)
+library(ggsci)
+library(ggrepel)
+library(ggplotify)
+library(cowplot)
+library(gridExtra)
+library(viridis)
+library(scales)
+library(ggpubr)
+sce <- readRDS("/home/data/t210344/Project/5Dataset/8cellcommunication/sce.fine.annotated.rds")
+a <- UMAPPlot(object = sce, group.by = "fine_labels", pt.size = 0.3, repel=T, label=T, label.size=3);a
+
+library(CellChat)
+library(future)
+library(patchwork)
+cellchat <- readRDS("/home/data/t210344/Project/5Dataset/8cellcommunication/primary_HNSCC_cellchat_result.rds")
+netVisual_chord_gene(cellchat, sources.use = c(20,29), targets.use = c(1:19), slot.name = "netP", legend.pos.x = 10,small.gap = 3)
+
+pathways.show <- c("MHC-I") 
+vertex.receiver = c(21,30) 
+netAnalysis_contribution(cellchat, signaling = pathways.show)
+
+pathways.show <- c("MHC-II") 
+vertex.receiver = c(21,30) 
+netAnalysis_contribution(cellchat, signaling = pathways.show)
+
+
+B_celltypes <- c('MZB-1', 'MZB-2','GCB','AcB1', 'AcB2','AcB3', 'Naive','Memory','TS', 'IgM-only', 'Plasmablast', 'PB', 'DN')
+lr_1 <- netVisual_bubble(cellchat,
+                         targets.use = "CD4+Tem", # CD8+Tem, CD8+Trm, CD4+Tfh, CD4+Tem
+                         sources.use = B_celltypes,
+                         remove.isolate = FALSE,
+                         return.data = TRUE
+)[[1]]
+
+lr_statistics <- lr_1 %>%
+  group_by(interaction_name) %>%
+  summarise(n = n()) %>%
+  dplyr::filter(n < n_distinct(lr_1$source))
+lr_1 <- lr_1 %>%
+  dplyr::filter(interaction_name %in% lr_statistics$interaction_name)
+
+lr_1 <- lr_1 %>%
+  mutate(
+    with = source,
+    interaction_new = paste(ligand, "->", receptor)
+  )
+
+
+lr_2 <- netVisual_bubble(cellchat,
+                         sources.use = "CD4+Tem",
+                         targets.use = B_celltypes,
+                         remove.isolate = FALSE,
+                         return.data = TRUE
+)[[1]]
+
+lr_statistics <- lr_2 %>%
+  group_by(interaction_name) %>%
+  summarise(n = n()) %>%
+  dplyr::filter(n < n_distinct(lr_2$target))
+lr_2 <- lr_2 %>%
+  dplyr::filter(interaction_name %in% lr_statistics$interaction_name)
+
+lr_2 <- lr_2 %>%
+  mutate(
+    with = target,
+    interaction_new = paste(receptor, "<-", ligand)
+  )
+
+
+lr <- rbind(lr_1, lr_2)
+
+plot_df <- lr %>%
+  dplyr::select(with, interaction_new, prob, pval)
+
+plot_df$with <- factor(plot_df$with, levels = B_celltypes)
+
+plot_df$interaction_new[plot_df$interaction_new %in% c("CD99 -> CD99", "CD99 <- CD99")] <- "CD99 <-> CD99"
+plot_df$interaction_new[plot_df$interaction_new %in% c("CD22 -> PTPRC", "CD22 <- PTPRC")] <- "CD22 <-> PTPRC"
+plot_df <- plot_df %>% dplyr::distinct()
+plot_df$interaction_new <- factor(plot_df$interaction_new, levels = sort(unique(plot_df$interaction_new), decreasing = TRUE))
+
+values <- c(1, 2, 3)
+names(values) <- c("P > 0.05", "0.01 < P < 0.05", "P < 0.01")
+
+p <- ggplot(plot_df, aes(x = with, y = interaction_new)) +
+  geom_point(aes(color = prob, size = pval)) +
+  scale_color_distiller(
+    palette = "YlOrRd", direction = 1,
+    breaks = c(quantile(plot_df$prob, 0, na.rm = TRUE),
+               quantile(plot_df$prob, 1, na.rm = TRUE)),
+    labels = c("Min", "Max")
+  ) +
+  scale_radius(
+    range = c(1.5, 6), 
+    breaks = sort(unique(plot_df$pval)),
+    labels = names(values)[values %in% sort(unique(plot_df$pval))],
+    name = "p-value"
+  ) +
+  cowplot::theme_cowplot() +
+  guides(size = guide_legend(title = "P-value")) +
+  guides(color = guide_colorbar(title = "Communication\nprobability")) +
+  theme(
+    axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 7),
+    text = element_text(size = 7),
+    plot.margin = unit(c(1, 1, 1, 1), "char"),
+    panel.background = element_rect(colour = "black", fill = "white")
+  ) +
+  labs(x = "", y = "") +
+  ggtitle("Interaction with CD4+ Tem cells")
+
+print(p)   
+
+
+lr_1 <- netVisual_bubble(cellchat,
+                         targets.use = "CD4+Tfh", 
+                         sources.use = B_celltypes,
+                         remove.isolate = FALSE,
+                         return.data = TRUE
+)[[1]]
+
+lr_statistics <- lr_1 %>%
+  group_by(interaction_name) %>%
+  summarise(n = n()) %>%
+  dplyr::filter(n < n_distinct(lr_1$source))
+lr_1 <- lr_1 %>%
+  dplyr::filter(interaction_name %in% lr_statistics$interaction_name)
+
+lr_1 <- lr_1 %>%
+  mutate(
+    with = source,
+    interaction_new = paste(ligand, "->", receptor)
+  )
+
+
+lr_2 <- netVisual_bubble(cellchat,
+                         sources.use = "CD4+Tem",
+                         targets.use = B_celltypes,
+                         remove.isolate = FALSE,
+                         return.data = TRUE
+)[[1]]
+lr_statistics <- lr_2 %>%
+  group_by(interaction_name) %>%
+  summarise(n = n()) %>%
+  dplyr::filter(n < n_distinct(lr_2$target))
+lr_2 <- lr_2 %>%
+  dplyr::filter(interaction_name %in% lr_statistics$interaction_name)
+lr_2 <- lr_2 %>%
+  mutate(
+    with = target,
+    interaction_new = paste(receptor, "<-", ligand)
+  )
+
+lr <- rbind(lr_1, lr_2)
+plot_df <- lr %>%
+  dplyr::select(with, interaction_new, prob, pval)
+
+plot_df$with <- factor(plot_df$with, levels = B_celltypes)
+
+plot_df$interaction_new[plot_df$interaction_new %in% c("CD99 -> CD99", "CD99 <- CD99")] <- "CD99 <-> CD99"
+plot_df$interaction_new[plot_df$interaction_new %in% c("CD22 -> PTPRC", "CD22 <- PTPRC")] <- "CD22 <-> PTPRC"
+plot_df <- plot_df %>% dplyr::distinct()
+plot_df$interaction_new <- factor(plot_df$interaction_new, levels = sort(unique(plot_df$interaction_new), decreasing = TRUE))
+plot_df <- plot_df %>%
+  filter(!interaction_new %in% c("CD8A <- HLA-A","CD8A <- HLA-B","CD8A <- HLA-C","CD8A <- HLA-D","CD8A <- HLA-E","CD8A <- HLA-F",
+                                 "CD99 <-> CD99","SEll <- SELPLG"))
+values <- c(1, 2, 3)
+names(values) <- c("P > 0.05", "0.01 < P < 0.05", "P < 0.01")
+
+p <- ggplot(plot_df, aes(x = with, y = interaction_new)) +
+  geom_point(aes(color = prob, size = pval)) +
+  scale_color_distiller(
+    palette = "YlOrRd", direction = 1,
+    breaks = c(quantile(plot_df$prob, 0, na.rm = TRUE),
+               quantile(plot_df$prob, 1, na.rm = TRUE)),
+    labels = c("Min", "Max")
+  ) +
+  scale_radius(
+    range = c(1.5, 6),  
+    breaks = sort(unique(plot_df$pval)),
+    labels = names(values)[values %in% sort(unique(plot_df$pval))],
+    name = "p-value"
+  ) +
+  cowplot::theme_cowplot() +
+  guides(size = guide_legend(title = "P-value")) +
+  guides(color = guide_colorbar(title = "Communication\nprobability")) +
+  theme(
+    axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 7),
+    text = element_text(size = 7),
+    plot.margin = unit(c(1, 1, 1, 1), "char"),
+    panel.background = element_rect(colour = "black", fill = "white")
+  ) +
+  labs(x = "", y = "") +
+  ggtitle("Interaction with CD4+ Tfh cells")
+
+print(p)   
