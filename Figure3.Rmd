@@ -10,7 +10,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 # Figure 3A-1
 ```{r}
-.libPaths(c('/home/data/t210344/R/x86_64-pc-linux-gnu-library/4.3','/usr/local/lib/R/library','/refdir/Rlib','/home/data/t210344/R/x86_64-pc-linux-gnu-library/4.2'))
 library(ReactomePA)
 library(org.Hs.eg.db)
 library(ggplot2)
@@ -29,7 +28,7 @@ library(gridExtra)
 library(viridis)
 library(scales)
 library(ggpubr)
-Bcell <- readRDS("/home/data/t210344/Project/5Dataset/5annotationB/Bcell.annotated.rds")
+Bcell <- readRDS("/home/data/path/to/directory/Bcell.annotated.rds")
 Idents(Bcell) <- 'celltype'
 col<-colorRampPalette((pal_npg("nrc")(9)))(13)
 COLORS_NAMES <- levels(Bcell$celltype)
@@ -126,7 +125,7 @@ p + stat_compare_means(comparisons = my_comparisons,label = "p.signif",label.y=c
 #})
 #saveRDS(degs, file = "7-HD-HNSC/degs_list.rds")
 library(tidyverse)
-degs <- readRDS("/home/data/t210344/Project/5Dataset/7-HD-HNSC/deg.rds")
+degs <- readRDS("/home/data/path/to/directory/deg.rds")
 names(degs) <- unique(Bcell$celltype)
 df2 <- data.frame()
 top_n_df <- data.frame()
@@ -241,7 +240,7 @@ p8
 # Figure 3C 
 ```{r}
 df <- readr::read_csv(
-  "/home/data/t210344/Project/5Dataset/7-HD-HNSC/HDv.s.HNSCC_GSEA/Bcells_GO_BP_cluster_simplified.csv",
+  "/data/path/to/directory/Bcells_GO_BP_cluster_simplified.csv",
   show_col_types = FALSE
 )
 
@@ -291,7 +290,7 @@ suppressPackageStartupMessages({
   library(dplyr)
 })
 
-av <- read.csv("/home/data/t210344/Project/5Dataset/7-HD-HNSC/AverageExpression-0.8.csv", 
+av <- read.csv("/home/data/path/to/directory/AverageExpression-0.8.csv", 
                row.names = 1, check.names = FALSE)
 av <- as.matrix(av) 
 mode(av) <- "numeric"
