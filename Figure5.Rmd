@@ -1,5 +1,5 @@
 ---
-title: "202508Figure5"
+title: "Figure5"
 author: "Jiantong Bao"
 date: "2025-08-22"
 output: html_document
@@ -10,7 +10,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 # Figure 5A
 ```{r, fig.width=10, fig.height=10}
-.libPaths(c('/home/data/t210344/R/x86_64-pc-linux-gnu-library/4.3','/usr/local/lib/R/library','/refdir/Rlib','/home/data/t210344/R/x86_64-pc-linux-gnu-library/4.2'))
 library(tidyr)
 library(Seurat)
 library(patchwork)
@@ -24,7 +23,7 @@ library(gghalves)
 library(ggridges)
 library(scDblFinder)
 library(dplyr)
-Bcell <- readRDS("~/Project/5Dataset/6StratifiedAnalysis/Bcell.rds")
+Bcell <- readRDS("/home/data/path/to/directory/Bcell.rds")
 table(Bcell$sample_type)
 sce=subset(Bcell,subset=sample_type==c("TIL")) 
 
@@ -132,7 +131,7 @@ draw(ht)
 ```
 # Figure 5C
 ```{r}
-df <- read.csv("/home/data/t210344/Project/5Dataset/11-GSVA/enrichGO_all.csv",
+df <- read.csv("/home/data/path/to/directory/enrichGO_all.csv",
                check.names = FALSE)
 
 if ("...1" %in% names(df)) df <- df[ , setdiff(names(df), "...1")]
@@ -167,7 +166,7 @@ suppressPackageStartupMessages({
 })
 
 
-load("/home/data/t210344/Project/5Dataset/11-GSVA/GSEA_result.RData")  
+load("/home/data/path/to/directory/GSEA_result.RData")  
 
 library(enrichplot)
 library(ggplot2)
