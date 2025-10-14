@@ -8,14 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-```{r}
-.libPaths(c(
-  '/home/data/t210344/R/x86_64-pc-linux-gnu-library/4.3',
-  '/usr/local/lib/R/library',
-  '/refdir/Rlib',
-  '/home/data/t210344/R/x86_64-pc-linux-gnu-library/4.2'
-))
-```
+
 
 # knitr 
 ```{r}
@@ -120,10 +113,10 @@ custom_colors <- c(
 ```
 # Read in samples 
 ```{r}
-seuratObjS01 <- readRDS("/home/data/t210344/Project/5Dataset/20250423_Redone_new_Figure6/seuratObjS01.rds")
-seuratObjS02 <- readRDS("/home/data/t210344/Project/5Dataset/20250423_Redone_new_Figure6/seuratObjS02.rds")
-seuratObjS03 <- readRDS("/home/data/t210344/Project/5Dataset/20250423_Redone_new_Figure6/seuratObjS03.rds")
-seuratObjS04 <- readRDS("/home/data/t210344/Project/5Dataset/20250423_Redone_new_Figure6/seuratObjS04.rds")
+seuratObjS01 <- readRDS("/home/data/path/to/directory/seuratObjS01.rds")
+seuratObjS02 <- readRDS("/home/data/path/to/directory/seuratObjS02.rds")
+seuratObjS03 <- readRDS("/home/data/path/to/directory/seuratObjS03.rds")
+seuratObjS04 <- readRDS("/home/data/path/to/directory/seuratObjS04.rds")
 ```
 # Assign value1
 ```{r}
@@ -154,7 +147,6 @@ seuratObj[["predictions"]] <- predictions.assay
 DefaultAssay(seuratObj) <- "predictions"
 p <- SpatialFeaturePlot(seuratObj, features = c("B-Plasma.cells", "T.cells","Malignant.cells"), 
                         pt.size.factor = 2, ncol = 3, crop = FALSE, alpha = c(0.1, 1));p
-#ggsave('20250423_Redone_new_Figure6/Patient01_Dominant_main_Labels.pdf',width=width.ppi*3,height=height.ppi)
 ```
 # spatial visualization
 ```{r}
@@ -179,13 +171,12 @@ Idents(seuratObj) <- "dominant_celltype"
 p1 <- DimPlot(seuratObj, reduction = "umap", label = F, cols=custom_colors_main)+NoLegend()
 p2 <- SpatialPlot(seuratObj, group.by = "dominant_celltype",cols = custom_colors_main) + theme(legend.position = "right")
 p1 + p2
-#ggsave('20250423_Redone_new_Figure6/Patient01_Dominant_main_Labels_umap.pdf',width=width.ppi*2,height=height.ppi)
 ```
 
 # Deconvolution2
 ```{r}
-sce <- readRDS("/home/data/t210344/Project/5Dataset/20250423_Redone_new_Figure6/sce.fine.annotated_SCT.rds")
-anchors <- readRDS('/home/data/t210344/Project/5Dataset/20250423_Redone_new_Figure6/sce.fine.annotated_SCT_anchors_anchors_Patient01.rds')
+sce <- readRDS("/home/data/path/to/directory/sce.fine.annotated_SCT.rds")
+anchors <- readRDS('/home/data/path/to/directory/sce.fine.annotated_SCT_anchors_anchors_Patient01.rds')
 
 predictions.assay <- TransferData(
   anchorset = anchors, 
@@ -206,7 +197,6 @@ proportions <- t(proportions)
 proportions <- proportions[,-9]
 proportions <- as.data.frame(proportions)
 proportions$dominant_fine_labels <- apply(proportions, 1, function(x) names(proportions)[which.max(x)])
-#write.csv(proportions,'20250423_Redone_new_Figure6/S01proportion_dominant_5Datasets_projected_fine_labels.csv',row.names = T)
 
 seuratObj <- Seurat::AddMetaData(seuratObj,proportions)
 
@@ -225,7 +215,6 @@ p_fine <- SpatialPlot(
 ) +
   scale_fill_manual(values = custom_colors) +  
   theme(legend.position = "right");p_fine
-#ggsave('20250423_Redone_new_Figure6/Patient01_InterpretedDominant_fine_Labels.pdf',width=width.ppi,height=height.ppi)
 ```
 # highlight only interested subsets
 ```{r}
@@ -238,7 +227,7 @@ p_interested <- SpatialPlot(
 ) +
   scale_fill_manual(values = custom_colors) +  
   theme(legend.position = "right");p_interested
-#ggsave('20250423_Redone_new_Figure6/Patient01_InterpretedDominant_fine_Labels_interested_2.pdf',width=width.ppi,height=height.ppi)
+
 Idents(seuratObjS01) <- "dominant_fine_labels"
 interest <- subset(seuratObjS01, idents = c("MZB-1" ,"MZB-2","GCB","CD4+Tem","CD4+Tfh"))
 p_interested <- SpatialPlot(
@@ -248,7 +237,6 @@ p_interested <- SpatialPlot(
 ) +
   scale_fill_manual(values = custom_colors) +  
   theme(legend.position = "right");p_interested
-#ggsave('20250423_Redone_new_Figure6/Patient01_InterpretedDominant_fine_Labels_interested_3.pdf',width=width.ppi,height=height.ppi)
 ```
 # Assign value2
 ```{r}
@@ -278,7 +266,6 @@ seuratObj[["predictions"]] <- predictions.assay
 DefaultAssay(seuratObj) <- "predictions"
 p <- SpatialFeaturePlot(seuratObj, features = c("B-Plasma.cells", "T.cells","Malignant.cells"), 
                         pt.size.factor = 2, ncol = 3, crop = FALSE, alpha = c(0.1, 1));p
-#ggsave('20250423_Redone_new_Figure6/Patient01_Dominant_main_Labels.pdf',width=width.ppi*3,height=height.ppi)
 ```
 # spatial visualization
 ```{r}
@@ -303,12 +290,11 @@ Idents(seuratObj) <- "dominant_celltype"
 p1 <- DimPlot(seuratObj, reduction = "umap", label = F, cols=custom_colors_main)+NoLegend()
 p2 <- SpatialPlot(seuratObj, group.by = "dominant_celltype",cols = custom_colors_main) + theme(legend.position = "right")
 p1 + p2
-#ggsave('20250423_Redone_new_Figure6/Patient01_Dominant_main_Labels_umap.pdf',width=width.ppi*2,height=height.ppi)
 ```
 
 # Deconvolution2
 ```{r}
-anchors <- readRDS('/home/data/t210344/Project/5Dataset/20250423_Redone_new_Figure6/sce.fine.annotated_SCT_anchors_anchors_Patient02.rds')
+anchors <- readRDS('/home/data/path/to/directory/sce.fine.annotated_SCT_anchors_anchors_Patient02.rds')
 
 predictions.assay <- TransferData(
   anchorset = anchors, 
@@ -329,7 +315,6 @@ proportions <- t(proportions)
 proportions <- proportions[,-9]
 proportions <- as.data.frame(proportions)
 proportions$dominant_fine_labels <- apply(proportions, 1, function(x) names(proportions)[which.max(x)])
-#write.csv(proportions,'20250423_Redone_new_Figure6/S02proportion_dominant_5Datasets_projected_fine_labels.csv',row.names = T)
 
 seuratObj <- Seurat::AddMetaData(seuratObj,proportions)
 
@@ -348,7 +333,6 @@ p_fine <- SpatialPlot(
 ) +
   scale_fill_manual(values = custom_colors) + 
   theme(legend.position = "right");p_fine
-#ggsave('20250423_Redone_new_Figure6/Patient02_InterpretedDominant_fine_Labels.pdf',width=width.ppi,height=height.ppi)
 ```
 # highlight only interested subsets
 ```{r}
@@ -361,8 +345,6 @@ p_interested <- SpatialPlot(
 ) +
   scale_fill_manual(values = custom_colors) +  
   theme(legend.position = "right");p_interested
-#ggsave('20250423_Redone_new_Figure6/Patient02_InterpretedDominant_fine_Labels_interested_2.pdf',width=width.ppi,height=height.ppi)
-
 ```
 
 # Assign value3
@@ -394,7 +376,6 @@ seuratObj[["predictions"]] <- predictions.assay
 DefaultAssay(seuratObj) <- "predictions"
 p <- SpatialFeaturePlot(seuratObj, features = c("B-Plasma.cells", "T.cells","Malignant.cells"), 
                         pt.size.factor = 2, ncol = 3, crop = FALSE, alpha = c(0.1, 1));p
-#ggsave('20250423_Redone_new_Figure6/Patient03_Dominant_main_Labels.pdf',width=width.ppi*3,height=height.ppi)
 ```
 # spatial visualization
 ```{r}
@@ -419,12 +400,11 @@ Idents(seuratObj) <- "dominant_celltype"
 p1 <- DimPlot(seuratObj, reduction = "umap", label = F, cols=custom_colors_main)+NoLegend()
 p2 <- SpatialPlot(seuratObj, group.by = "dominant_celltype",cols = custom_colors_main) + theme(legend.position = "right")
 p1 + p2
-#ggsave('20250423_Redone_new_Figure6/Patient03_Dominant_main_Labels_umap.pdf',width=width.ppi*2,height=height.ppi)
 ```
 
 # Deconvolution2
 ```{r}
-anchors <- readRDS('/home/data/t210344/Project/5Dataset/20250423_Redone_new_Figure6/sce.fine.annotated_SCT_anchors_anchors_Patient03.rds')
+anchors <- readRDS('/home/data/path/to/directory/sce.fine.annotated_SCT_anchors_anchors_Patient03.rds')
 
 predictions.assay <- TransferData(
   anchorset = anchors, 
@@ -445,7 +425,7 @@ proportions <- t(proportions)
 proportions <- proportions[,-9]
 proportions <- as.data.frame(proportions)
 proportions$dominant_fine_labels <- apply(proportions, 1, function(x) names(proportions)[which.max(x)])
-#write.csv(proportions,'20250423_Redone_new_Figure6/S03proportion_dominant_5Datasets_projected_fine_labels.csv',row.names = T)
+write.csv(proportions,'S03proportion_dominant_5Datasets_projected_fine_labels.csv',row.names = T)
 
 seuratObj <- Seurat::AddMetaData(seuratObj,proportions)
 
@@ -464,7 +444,7 @@ p_fine <- SpatialPlot(
 ) +
   scale_fill_manual(values = custom_colors) +  
   theme(legend.position = "right");p_fine
-#ggsave('20250423_Redone_new_Figure6/Patient03_InterpretedDominant_fine_Labels.pdf',width=width.ppi,height=height.ppi)
+ggsave('Patient03_InterpretedDominant_fine_Labels.pdf',width=width.ppi,height=height.ppi)
 ```
 # highlight only interested subsets
 ```{r}
@@ -477,7 +457,7 @@ p_interested <- SpatialPlot(
 ) +
   scale_fill_manual(values = custom_colors) +  
   theme(legend.position = "right");p_interested
-#ggsave('20250423_Redone_new_Figure6/Patient03_InterpretedDominant_fine_Labels_interested_2.pdf',width=width.ppi,height=height.ppi)
+ggsave('Patient03_InterpretedDominant_fine_Labels_interested_2.pdf',width=width.ppi,height=height.ppi)
 
 ```
 
@@ -510,7 +490,7 @@ seuratObj[["predictions"]] <- predictions.assay
 DefaultAssay(seuratObj) <- "predictions"
 p <- SpatialFeaturePlot(seuratObj, features = c("B-Plasma.cells", "T.cells","Malignant.cells"), 
                         pt.size.factor = 2, ncol = 3, crop = FALSE, alpha = c(0.1, 1));p
-#ggsave('20250423_Redone_new_Figure6/Patient03_Dominant_main_Labels.pdf',width=width.ppi*3,height=height.ppi)
+ggsave('Patient03_Dominant_main_Labels.pdf',width=width.ppi*3,height=height.ppi)
 ```
 # spatial visualization
 ```{r}
@@ -535,13 +515,13 @@ Idents(seuratObj) <- "dominant_celltype"
 p1 <- DimPlot(seuratObj, reduction = "umap", label = F, cols=custom_colors_main)+NoLegend()
 p2 <- SpatialPlot(seuratObj, group.by = "dominant_celltype",cols = custom_colors_main) + theme(legend.position = "right")
 p1 + p2
-#ggsave('20250423_Redone_new_Figure6/Patient03_Dominant_main_Labels_umap.pdf',width=width.ppi*2,height=height.ppi)
+ggsave('Patient03_Dominant_main_Labels_umap.pdf',width=width.ppi*2,height=height.ppi)
 ```
 
 # Deconvolution2
 ```{r}
-sce <- readRDS("/home/data/t210344/Project/5Dataset/20250423_Redone_new_Figure6/sce.fine.annotated_SCT.rds")
-anchors <- readRDS('/home/data/t210344/Project/5Dataset/20250423_Redone_new_Figure6/sce.fine.annotated_SCT_anchors_anchors_Patient04.rds')
+sce <- readRDS("/home/data/path/to/directory/sce.fine.annotated_SCT.rds")
+anchors <- readRDS('/home/data/path/to/directory/sce.fine.annotated_SCT_anchors_anchors_Patient04.rds')
 
 predictions.assay <- TransferData(
   anchorset = anchors, 
@@ -562,7 +542,7 @@ proportions <- t(proportions)
 proportions <- proportions[,-9]
 proportions <- as.data.frame(proportions)
 proportions$dominant_fine_labels <- apply(proportions, 1, function(x) names(proportions)[which.max(x)])
-#write.csv(proportions,'20250423_Redone_new_Figure6/S04proportion_dominant_5Datasets_projected_fine_labels.csv',row.names = T)
+write.csv(proportions,'S04proportion_dominant_fine_labels.csv',row.names = T)
 
 seuratObj <- Seurat::AddMetaData(seuratObj,proportions)
 
@@ -581,7 +561,7 @@ p_fine <- SpatialPlot(
 ) +
   scale_fill_manual(values = custom_colors) +  
   theme(legend.position = "right");p_fine
-#ggsave('20250423_Redone_new_Figure6/Patient04_InterpretedDominant_fine_Labels.pdf',width=width.ppi,height=height.ppi)
+ggsave('Patient04_InterpretedDominant_fine_Labels.pdf',width=width.ppi,height=height.ppi)
 ```
 # highlight only interested subsets
 ```{r}
@@ -594,4 +574,5 @@ p_interested <- SpatialPlot(
 ) +
   scale_fill_manual(values = custom_colors) +  
   theme(legend.position = "right");p_interested
-#ggsave('20250423_Redone_new_Figure6/Patient04_InterpretedDominant_fine_Labels_interested_2.pdf',width=width.ppi,height=height.ppi)
+ggsave('Patient04_InterpretedDominant_fine_Labels_interest.pdf',width=width.ppi,height=height.ppi)
+```
