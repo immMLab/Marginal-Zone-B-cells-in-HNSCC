@@ -11,8 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Figure 5A
 ```{r}
-.libPaths(c('/home/data/t210344/R/x86_64-pc-linux-gnu-library/4.3','/usr/local/lib/R/library','/refdir/Rlib','/home/data/t210344/R/x86_64-pc-linux-gnu-library/4.2'))
-Bcell <- readRDS("/home/data/t210344/Project/5Dataset/5annotationB/Bcell.annotated.rds")
+Bcell <- readRDS("/home/data/path/to/directory/Bcell.annotated.rds")
 suppressPackageStartupMessages({
   library(Seurat)
   library(ggplot2)
@@ -50,4 +49,66 @@ p <- ggplot(df, aes(x = celltype, y = expression, fill = celltype)) +
   xlab("")
 
 print(p)
+```
+
+# Figure 7B,C
+```{r}
+load("~/Project/5Dataset/13-CIBERSORTx/TCGA_survival.RData")
+library(survival)
+library(survminer)
+library(dplyr)
+
+exprSet <- tumor_samples
+meta$GCB  <- exprSet[,"GCB"]
+meta$MZB1 <- exprSet[,"MZB.1"]
+meta$MZB2 <- exprSet[,"MZB.2"]
+
+
+meta <- meta %>%
+  mutate(
+    time  = as.numeric(time),
+    event = as.numeric(event)
+  ) %>%
+  tidyr::drop_na(time, event, GCB, MZB1, MZB2)
+
+
+res.cut <- surv_cutpoint(
+  meta,
+  time = "time",
+  event = "event",
+  variables = c("GCB","MZB1","MZB2"),
+  minprop = 0
+)
+
+summary(res.cut)
+
+```
+
+```{r}
+
+### MZB1 
+res.cat <- surv_categorize(res.cut)
+sfit <- survfit(Surv(time, event)~MZB1, data=res.cat)
+ggsurvplot(sfit, conf.int=F, pval=TRUE)
+
+ggsurv_plot <- ggsurvplot(sfit,palette = c("#E7B800", "#2E9FDF"),
+                          risk.table =TRUE,pval =TRUE,
+                          conf.int =TRUE,xlab ="Time in months", 
+                          ggtheme =theme_light(), 
+                          ncensor.plot = TRUE)
+
+print(ggsurv_plot)
+
+
+### MZB2 
+sfit <- survfit(Surv(time, event)~MZB2, data=res.cat)
+ggsurvplot(sfit, conf.int=F, pval=TRUE)
+
+ggsurv_plot <-ggsurvplot(sfit,palette = c("#E7B800", "#2E9FDF"),
+                         risk.table =TRUE,pval =TRUE,
+                         conf.int =TRUE,xlab ="Time in months", 
+                         ggtheme =theme_light(), 
+                         ncensor.plot = TRUE)
+
+print(ggsurv_plot)
 ```
