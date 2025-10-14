@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Figure 5A
+# Figure 7A
 ```{r}
 Bcell <- readRDS("/home/data/path/to/directory/Bcell.annotated.rds")
 suppressPackageStartupMessages({
