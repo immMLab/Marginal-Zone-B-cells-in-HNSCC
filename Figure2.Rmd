@@ -10,7 +10,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-.libPaths(c('/home/data/t210344/R/x86_64-pc-linux-gnu-library/4.3','/usr/local/lib/R/library','/refdir/Rlib','/home/data/t210344/R/x86_64-pc-linux-gnu-library/4.2'))
 library(ReactomePA)
 library(org.Hs.eg.db)
 library(ggplot2)
@@ -35,14 +34,14 @@ library(scales)
 ```{r}
 set.seed(123)  
 
-sce <-readRDS("/home/data/t210344/Project/5Dataset/8cellcommunication/sce.fine.annotated.rds")
+sce <-readRDS("/home/data/path/to/directory/sce.fine.annotated.rds")
 a1 <- UMAPPlot(object = sce, group.by = "main_labels", pt.size = 0.3, repel=T, label=T, label.size=3) + 
   labs(title = "HNSCC");a1
 #ggsave("plots/Fig2B_sce_main_labels.pdf", a1, width=width.ppi ,height=height.ppi)
 ```
 # Bcell umap
 ```{r}
-Bcell <- readRDS("/home/data/t210344/Project/5Dataset/5annotationB/Bcell.annotated.rds")
+Bcell <- readRDS("/home/data/path/to/directory/Bcell.annotated.rds")
 Idents(Bcell) <- 'celltype'
 col<-colorRampPalette((pal_npg("nrc")(9)))(13)#
 show_col(col)
@@ -188,7 +187,7 @@ p5
 library(readr)
 library(dplyr) 
 library(ggpubr)
-cellnum_with_clinical <- read_csv("/home/data/t210344/Project/5Dataset/6StratifiedAnalysis/cellnum_with_clinical.csv")
+cellnum_with_clinical <- read_csv("/home/data/path/to/directory/cellnum_with_clinical.csv")
 cellnum_with_clinical$HPV <- gsub("P", "p", cellnum_with_clinical$HPV) 
 filtered_data <- cellnum_with_clinical %>%
   filter(Celltype %in% c("MZB-1","MZB-2","GCB"),sample_type == "TIL") %>%
@@ -380,6 +379,9 @@ for (i in c("Naive_percent","Memory_percent","PB_percent")) {
       legend.position = "none"
     )
   
+  print(p)   
+}
+```
   print(p)   
 }
 ```
